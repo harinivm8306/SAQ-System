@@ -1,0 +1,25 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <title>IntelliQ</title>
+    <link rel="icon" href="{% static 'images/favicon.png' %}" type="image/png">
+    <link rel="stylesheet" href="{% static 'css/style.css' %}">
+</head>
+
+<body class="auth-page">
+
+    <!-- Simple Navbar -->
+    <header class="navbar">
+        <div class="logo">IntelliQ</div>
+    </header>
+
+    <div class="center-wrapper">
+        {% block content %}{% endblock %}
+    </div>
+
+</body>
+
+</html>

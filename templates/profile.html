@@ -1,0 +1,27 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<div class="container mt-5">
+    <h2>My Profile</h2>
+
+    <div class="card p-4">
+
+        <img src="{{ user.profile.profile_image.url }}"
+             width="150"
+             height="150"
+             class="rounded-circle mb-3">
+
+        <p><strong>Username:</strong> {{ user.username }}</p>
+        <p><strong>Email:</strong> {{ user.email }}</p>
+
+        <form method="POST" enctype="multipart/form-data">
+            {% csrf_token %}
+            {{ form.as_p }}
+            <button type="submit" class="btn btn-primary">
+                Update Profile
+            </button>
+        </form>
+
+    </div>
+</div>
+{% endblock %}

@@ -1,0 +1,233 @@
+﻿{% load static %}
+<!DOCTYPE html>
+<html>
+
+<head>
+    <title>Quiz: {{ subcategory_name|default:"Assessment" }} - IntelliQ</title>
+    <link rel="icon" href="{% static 'images/favicon.png' %}" type="image/png">
+    <link rel="stylesheet" href="{% static 'css/dashboard.css' %}">
+</head>
+
+<body>
+    <div id="proctor-overlay">
+        <div class="warning-icon">⚠️</div>
+        <h1>QUIZ PAUSED</h1>
+        <p style="font-size: 18px; margin-bottom: 30px;">
+            You have left the full-screen mode or switched tabs.<br>
+            The timer is still running. Please return to full-screen to continue.
+        </p>
+        <button class="btn-primary" onclick="enterFullScreen()">Return to Quiz</button>
+    </div>
+
+    <header class="quiz-header">
+        <div class="logo" style="margin: 0;">IntelliQ</div>
+        <div style="text-align: center;">
+            <span style="color: #bbb; display: block; font-size: 14px; text-transform: uppercase;">{{
+                subcategory_name|default:"ASSESSMENT" }}</span>
+            <span style="color: #666; display: block; font-size: 11px; margin-bottom: 4px;">Started: {{
+                attempt.started_at|date:"M d, Y g:i A" }}</span>
+            <span id="question-progress" style="font-weight: 700;">Question 1 of {{ total_questions }}</span>
+        </div>
+        <div class="timer-box" id="timer-display">
+            {% if timer_enabled %}--:--{% else %}UNTIMED{% endif %}
+        </div>
+    </header>
+
+    <div class="quiz-container">
+        {% for q in questions %}
+        <div class="quiz-card" id="card-{{ forloop.counter0 }}">
+            <div class="question-meta">QUESTION {{ forloop.counter }}</div>
+            <h2 style="margin-bottom: 30px; line-height: 1.4;">{{ q.question }}</h2>
+
+            <div class="options-grid">
+                {% for option in q.options %}
+                <div class="option-item {% if q.user_answer == option %}selected{% endif %}"
+                    data-q-idx="{{ forloop.parentloop.counter0 }}" data-option="{{ option|escapejs }}"
+                    onclick="handleOptionClick(this)">
+                    <div class="option-radio-circle"></div>
+                    <span class="option-text">{{ option }}</span>
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+        {% endfor %}
+
+        <div class="nav-controls">
+            <button id="prev-btn" class="btn-secondary" onclick="changeQuestion(-1)" disabled>Previous</button>
+            <button id="next-btn" class="btn-primary" style="margin: 0;" onclick="changeQuestion(1)">Next
+                Question</button>
+            <button id="submit-btn" class="btn-primary" style="margin: 0; display: none; background: #00c853;"
+                onclick="submitQuiz()">Submit Quiz</button>
+        </div>
+    </div>
+
+    {{ total_questions|default:0|json_script:"total-questions" }}
+    {{ timer_enabled|yesno:"true,false"|json_script:"timer-enabled" }}
+    {{ timer_remaining|default:0|json_script:"timer-remaining" }}
+
+    <script id="initial-answers" type="application/json">
+        {
+            "__dummy__": null
+            {% for q in questions %}{% if q.user_answer %},
+            "{{ forloop.counter0 }}": "{{ q.user_answer|escapejs }}"
+            {% endif %}{% endfor %}
+        }
+    </script>
+
+    <script>
+        const totalQuestions = JSON.parse(document.getElementById('total-questions').textContent);
+        const timerEnabled = JSON.parse(document.getElementById('timer-enabled').textContent);
+        const timerRemaining = JSON.parse(document.getElementById('timer-remaining').textContent);
+
+        const rawAnswers = JSON.parse(document.getElementById('initial-answers').textContent);
+        delete rawAnswers.__dummy__;
+        const userAnswers = rawAnswers;
+
+        let currentIdx = 0;
+        let timerSeconds = 0;
+        let timerInterval;
+        let isPaused = false;
+
+        document.addEventListener('DOMContentLoaded', () => {
+            showQuestion(0);
+            startTimer();
+            document.addEventListener('fullscreenchange', handleFullScreenChange);
+            document.addEventListener('visibilitychange', handleVisibilityChange);
+            window.addEventListener('blur', () => pauseQuiz(true));
+        });
+
+        function showQuestion(idx) {
+            const cards = document.querySelectorAll('.quiz-card');
+            if (cards.length === 0) return;
+            cards.forEach(c => c.classList.remove('active'));
+            const target = document.getElementById(`card-${idx}`);
+            if (target) target.classList.add('active');
+            document.getElementById('question-progress').innerText = `Question ${idx + 1} of ${totalQuestions}`;
+            document.getElementById('prev-btn').disabled = (idx === 0);
+            if (idx === totalQuestions - 1) {
+                document.getElementById('next-btn').style.display = 'none';
+                document.getElementById('submit-btn').style.display = 'block';
+            } else {
+                document.getElementById('next-btn').style.display = 'block';
+                document.getElementById('submit-btn').style.display = 'none';
+            }
+        }
+
+        function changeQuestion(step) {
+            currentIdx += step;
+            showQuestion(currentIdx);
+        }
+
+        function handleOptionClick(element) {
+            const qIdx = element.getAttribute('data-q-idx');
+            const option = element.getAttribute('data-option');
+            selectOption(qIdx, option, element);
+        }
+
+        function selectOption(qIdx, option, element) {
+            if (isPaused) return;
+            userAnswers[qIdx] = option;
+            const card = document.getElementById(`card-${qIdx}`);
+            if (card) {
+                card.querySelectorAll('.option-item').forEach(opt => opt.classList.remove('selected'));
+                element.classList.add('selected');
+            }
+            // Save progress instantly when user picks an option
+            saveProgress(qIdx, option);
+        }
+
+        async function saveProgress(qIdx, option) {
+            try {
+                const packet = {};
+                packet[qIdx] = option;
+                await fetch('{% url "save_progress" attempt.id %}', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json', 'X-CSRFToken': '{{ csrf_token }}' },
+                    body: JSON.stringify({ answers: packet })
+                });
+            } catch (e) { }
+        }
+
+        function startTimer() {
+            if (timerEnabled) {
+                timerSeconds = parseInt(timerRemaining) || 0;
+                updateTimerDisplay();
+                timerInterval = setInterval(() => {
+                    if (isPaused) return;
+                    if (timerSeconds <= 0) {
+                        clearInterval(timerInterval);
+                        submitQuiz(true); // Auto-submit
+                        return;
+                    }
+                    timerSeconds--;
+                    updateTimerDisplay();
+                }, 1000);
+            }
+        }
+
+        function updateTimerDisplay() {
+            const mins = Math.floor(timerSeconds / 60);
+            const secs = timerSeconds % 60;
+            const display = document.getElementById('timer-display');
+            if (display) {
+                display.innerText = `${mins}:${secs.toString().padStart(2, '0')}`;
+            }
+        }
+
+        function enterFullScreen() {
+            const doc = document.documentElement;
+            if (doc.requestFullscreen) doc.requestFullscreen();
+            else if (doc.webkitRequestFullscreen) doc.webkitRequestFullscreen();
+            else if (doc.msRequestFullscreen) doc.msRequestFullscreen();
+            resumeQuiz();
+        }
+
+        function handleFullScreenChange() {
+            if (!document.fullscreenElement && !document.webkitFullscreenElement) {
+                pauseQuiz(true);
+            }
+        }
+
+        function handleVisibilityChange() {
+            if (document.hidden) {
+                pauseQuiz(true);
+            }
+        }
+
+        function pauseQuiz(showOverlay) {
+            isPaused = true;
+            if (showOverlay) {
+                const overlay = document.getElementById('proctor-overlay');
+                if (overlay) overlay.style.display = 'flex';
+            }
+        }
+
+        function resumeQuiz() {
+            isPaused = false;
+            const overlay = document.getElementById('proctor-overlay');
+            if (overlay) overlay.style.display = 'none';
+        }
+
+        async function submitQuiz(isAuto = false) {
+            if (isAuto || confirm("Are you sure you want to submit?")) {
+                if (document.exitFullscreen) document.exitFullscreen().catch(() => { });
+                const response = await fetch('{% url "submit_quiz" attempt.id %}', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'X-CSRFToken': '{{ csrf_token }}'
+                    },
+                    body: JSON.stringify({ answers: userAnswers })
+                });
+                const data = await response.json();
+                if (data.status === 'success') {
+                    window.location.href = data.redirect_url;
+                } else {
+                    alert("Submission failed: " + data.error);
+                }
+            }
+        }
+    </script>
+</body>
+
+</html>

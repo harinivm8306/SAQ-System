@@ -1,0 +1,14 @@
+{% extends 'base.html' %}
+
+{% block content %}
+
+<h2 class="text-center">Quiz Starting...</h2>
+
+<div class="card p-4 shadow">
+    <p><b>Subcategory:</b> {{ subcategory }}</p>
+    <p><b>Difficulty:</b> {{ difficulty }}</p>
+    <p><b>Number of Questions:</b> {{ questions }}</p>
+    <p><b>Timer Enabled:</b> {{ timer }}</p>
+</div>
+
+{% endblock %}

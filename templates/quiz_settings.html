@@ -1,0 +1,40 @@
+{% extends 'base.html' %}
+
+{% block content %}
+
+<h2 class="text-center mb-4">
+    Quiz Settings - {{ subcategory.name }}
+</h2>
+
+<form method="POST">
+    {% csrf_token %}
+
+    <div class="mb-3">
+        <label><b>Select Difficulty:</b></label><br>
+        <input type="radio" name="difficulty" value="Easy" required> Easy
+        <input type="radio" name="difficulty" value="Medium"> Medium
+        <input type="radio" name="difficulty" value="Hard"> Hard
+    </div>
+
+    <div class="mb-3">
+        <label><b>Number of Questions:</b></label>
+        <select name="questions" class="form-control" required>
+            <option value="">Select</option>
+            <option value="5">5</option>
+            <option value="10">10</option>
+            <option value="15">15</option>
+        </select>
+    </div>
+
+    <div class="mb-3">
+        <label><b>Enable Timer:</b></label><br>
+        <input type="checkbox" name="timer" value="On"> Yes
+    </div>
+
+    <button type="submit" class="btn btn-primary">
+        Start Quiz
+    </button>
+
+</form>
+
+{% endblock %}

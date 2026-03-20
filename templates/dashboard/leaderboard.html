@@ -1,0 +1,354 @@
+{% load static %}
+<!DOCTYPE html>
+<html>
+
+<head>
+    <title>Leaderboard - IntelliQ</title>
+    <link rel="icon" href="{% static 'images/favicon.png' %}" type="image/png">
+    <link rel="stylesheet" href="{% static 'css/dashboard.css' %}">
+    <style>
+        .leaderboard-container {
+            max-width: 1000px;
+            margin: 100px auto 50px;
+            padding: 0 20px;
+        }
+
+        .leaderboard-tabs {
+            display: flex;
+            gap: 20px;
+            margin-bottom: 30px;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+            padding-bottom: 10px;
+        }
+
+        .tab-link {
+            color: #888;
+            text-decoration: none;
+            font-weight: 600;
+            padding-bottom: 10px;
+            position: relative;
+            transition: 0.3s;
+        }
+
+        .tab-link.active {
+            color: #ff8c00;
+        }
+
+        .tab-link.active::after {
+            content: '';
+            position: absolute;
+            bottom: -11px;
+            left: 0;
+            width: 100%;
+            height: 2px;
+            background: #ff8c00;
+        }
+
+        .top-podium {
+            display: flex;
+            justify-content: center;
+            align-items: flex-end;
+            gap: 30px;
+            margin-bottom: 60px;
+            padding-top: 40px;
+        }
+
+        .podium-item {
+            text-align: center;
+            position: relative;
+        }
+
+        .podium-item.first {
+            order: 2;
+        }
+
+        .podium-item.second {
+            order: 1;
+        }
+
+        .podium-item.third {
+            order: 3;
+        }
+
+        .podium-avatar {
+            width: 100px;
+            height: 100px;
+            border-radius: 50%;
+            border: 4px solid #444;
+            margin-bottom: 15px;
+            background: #222;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            overflow: hidden;
+        }
+
+        .first .podium-avatar {
+            width: 130px;
+            height: 130px;
+            border-color: #ffd700;
+            box-shadow: 0 0 20px rgba(255, 215, 0, 0.3);
+        }
+
+        .second .podium-avatar {
+            border-color: #c0c0c0;
+        }
+
+        .third .podium-avatar {
+            border-color: #cd7f32;
+        }
+
+        .medal-icon {
+            position: absolute;
+            top: -20px;
+            left: 50%;
+            transform: translateX(-50%);
+            font-size: 40px;
+        }
+
+        .rank-table {
+            width: 100%;
+            background: rgba(26, 26, 26, 0.4);
+            border: 1px solid rgba(255, 140, 0, 0.1);
+            border-radius: 15px;
+            border-collapse: collapse;
+            overflow: hidden;
+        }
+
+        .rank-table th {
+            text-align: left;
+            padding: 20px;
+            color: #888;
+            font-size: 14px;
+            text-transform: uppercase;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+        }
+
+        .rank-table td {
+            padding: 15px 20px;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+            color: #ddd;
+        }
+
+        .rank-table tr.current-user {
+            background: rgba(255, 140, 0, 0.1);
+            border-left: 4px solid #ff8c00;
+        }
+
+        .rank-number {
+            font-weight: 700;
+            font-size: 18px;
+            color: #666;
+        }
+
+        .user-info-cell {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+        }
+
+        .small-avatar {
+            width: 35px;
+            height: 35px;
+            border-radius: 50%;
+            background: #333;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            overflow: hidden;
+        }
+
+        .score-val {
+            color: #ff8c00;
+            font-weight: 700;
+        }
+
+        .cat-filter {
+            background: rgba(0, 0, 0, 0.5);
+            border: 1px solid #444;
+            color: #fff;
+            padding: 8px 15px;
+            border-radius: 5px;
+            margin-left: auto;
+        }
+
+        .badge-tag {
+            font-size: 11px;
+            padding: 2px 8px;
+            border-radius: 4px;
+            background: rgba(255, 140, 0, 0.1);
+            color: #ff8c00;
+        }
+    </style>
+</head>
+
+<body>
+    <header class="navbar">
+        <div class="nav-left">
+            <div class="logo">IntelliQ</div>
+            <nav class="nav-links">
+                <a href="{% url 'dashboard' %}">Dashboard</a>
+                <a href="{% url 'profile' %}">Profile</a>
+                <a href="{% url 'categories' %}">Categories</a>
+                <a href="{% url 'my_quizzes' %}">My Quizzes</a>
+                <a href="{% url 'leaderboard' %}" class="active">Leaderboard</a>
+            </nav>
+        </div>
+        <div class="nav-right">
+            <span class="nav-username">Hi, {{ user.username }}</span>
+            <a href="{% url 'landing' %}" class="logout-btn">Logout</a>
+        </div>
+    </header>
+
+    <div class="leaderboard-container">
+        <div style="display: flex; align-items: center; margin-bottom: 40px;">
+            <div>
+                <h1 style="color: #fff; margin-bottom: 5px;">Hall of Fame</h1>
+                <p style="color: #888;">Compete with the best minds across the globe</p>
+            </div>
+            <select id="categorySelect" class="cat-filter" onchange="filterCategory(this.value)">
+                <option value="">Global Rankings</option>
+                {% for cat in categories %}
+                <option value="{{ cat.id }}">{{ cat.name }}</option>
+                {% endfor %}
+            </select>
+        </div>
+
+        <div class="leaderboard-tabs">
+            <a href="?type=global" data-type="global" class="tab-link">Top Points</a>
+            <a href="?type=streaks" data-type="streaks" class="tab-link">Top Streaks</a>
+        </div>
+
+        {% if leaderboard|length >= 3 %}
+        <div class="top-podium">
+            <!-- 2nd Place -->
+            <div class="podium-item second">
+                <div class="medal-icon">🥈</div>
+                <div class="podium-avatar">
+                    {% if leaderboard.1.avatar %}<img src="{{ leaderboard.1.avatar.url }}"
+                        style="width:100%;height:100%;object-fit:cover;">{% else %}<span
+                        style="font-size:30px;color:#555;">{{ leaderboard.1.initial }}</span>{% endif %}
+                </div>
+                <div style="color:#fff;font-weight:600;">{{ leaderboard.1.full_name }}</div>
+                <div class="score-val">{{ leaderboard.1.score_display }}</div>
+            </div>
+            <!-- 1st Place -->
+            <div class="podium-item first">
+                <div class="medal-icon">👑</div>
+                <div class="podium-avatar">
+                    {% if leaderboard.0.avatar %}<img src="{{ leaderboard.0.avatar.url }}"
+                        style="width:100%;height:100%;object-fit:cover;">{% else %}<span
+                        style="font-size:40px;color:#555;">{{ leaderboard.0.initial }}</span>{% endif %}
+                </div>
+                <div style="color:#fff;font-weight:700;font-size:20px;">{{ leaderboard.0.full_name }}</div>
+                <div class="score-val" style="font-size:24px;">{{ leaderboard.0.score_display }}</div>
+            </div>
+            <!-- 3rd Place -->
+            <div class="podium-item third">
+                <div class="medal-icon">🥉</div>
+                <div class="podium-avatar">
+                    {% if leaderboard.2.avatar %}<img src="{{ leaderboard.2.avatar.url }}"
+                        style="width:100%;height:100%;object-fit:cover;">{% else %}<span
+                        style="font-size:24px;color:#555;">{{ leaderboard.2.initial }}</span>{% endif %}
+                </div>
+                <div style="color:#fff;font-weight:600;">{{ leaderboard.2.full_name }}</div>
+                <div class="score-val">{{ leaderboard.2.score_display }}</div>
+            </div>
+        </div>
+        {% endif %}
+
+        <table class="rank-table">
+            <thead>
+                <tr>
+                    <th>Rank</th>
+                    <th>User</th>
+                    <th>Quizzes</th>
+                    <th>Accuracy</th>
+                    <th id="scoreColumnHeader">Points</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for entry in leaderboard %}
+                <tr class="{% if entry.is_current %}current-user{% endif %}">
+                    <td class="rank-number">#{{ entry.rank }}</td>
+                    <td>
+                        <div class="user-info-cell">
+                            <div class="small-avatar">
+                                {% if entry.avatar %}<img src="{{ entry.avatar.url }}"
+                                    style="width:100%;height:100%;border-radius:50%;">{% else %}<span
+                                    style="font-size:14px;color:#555;">{{ entry.initial }}</span>{% endif %}
+                            </div>
+                            <div>
+                                <div style="font-weight:600;">{{ entry.full_name }}</div>
+                                <div style="font-size:11px;color:#666;">@{{ entry.username }}</div>
+                            </div>
+                            {% if entry.rank <= 3 %}<span class="badge-tag">ELITE</span>{% endif %}
+                        </div>
+                    </td>
+                    <td>{{ entry.quizzes }}</td>
+                    <td>{{ entry.accuracy }}%</td>
+                    <td class="score-val">{{ entry.score_display }}</td>
+                </tr>
+                {% empty %}
+                <tr>
+                    <td colspan="5" style="text-align:center;padding:40px;color:#666;">No data available for this
+                        category</td>
+                </tr>
+                {% endfor %}
+
+                {% if current_user_stat and current_user_stat.rank > 50 %}
+                <tr style="height:10px;background:transparent;">
+                    <td colspan="5"></td>
+                </tr>
+                <tr class="current-user">
+                    <td class="rank-number">#{{ current_user_stat.rank }}</td>
+                    <td>
+                        <div class="user-info-cell">
+                            <div class="small-avatar">{% if current_user_stat.avatar %}<img
+                                    src="{{ current_user_stat.avatar.url }}"
+                                    style="width:100%;height:100%;border-radius:50%;">{% else %}<span
+                                    style="font-size:14px;color:#555;">{{ current_user_stat.initial }}</span>{% endif %}
+                            </div>
+                            <div>
+                                <div style="font-weight:600;">{{ current_user_stat.full_name }} (You)</div>
+                                <div style="font-size:11px;color:#666;">@{{ current_user_stat.username }}</div>
+                            </div>
+                        </div>
+                    </td>
+                    <td>{{ current_user_stat.quizzes }}</td>
+                    <td>{{ current_user_stat.accuracy }}%</td>
+                    <td class="score-val">{{ current_user_stat.score_display }}</td>
+                </tr>
+                {% endif %}
+            </tbody>
+        </table>
+    </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', function () {
+            const selectedCat = "{{ selected_category|default:'' }}";
+            const currentType = "{{ current_type }}";
+
+            const catSelect = document.getElementById('categorySelect');
+            if (selectedCat) catSelect.value = selectedCat;
+
+            document.querySelectorAll('.tab-link').forEach(link => {
+                if (link.getAttribute('data-type') === currentType) {
+                    link.classList.add('active');
+                }
+            });
+
+            const scoreHeader = document.getElementById('scoreColumnHeader');
+            if (currentType === 'streaks') {
+                scoreHeader.textContent = 'Max Streak';
+            }
+        });
+
+        function filterCategory(catId) {
+            if (catId) { window.location.href = `?type=category&category=${catId}`; }
+            else { window.location.href = `?type=global`; }
+        }
+    </script>
+</body>
+
+</html>

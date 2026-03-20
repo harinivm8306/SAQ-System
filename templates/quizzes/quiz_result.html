@@ -1,0 +1,101 @@
+﻿{% load static %}
+<!DOCTYPE html>
+<html>
+
+<head>
+    <title>Results: {{ attempt.subcategory.name }} - IntelliQ</title>
+    <link rel="icon" href="{% static 'images/favicon.png' %}" type="image/png">
+    <link rel="stylesheet" href="{% static 'css/dashboard.css' %}">
+</head>
+
+<body>
+    <!-- NAVBAR -->
+    <header class="navbar">
+        <div class="nav-left">
+            <div class="logo">IntelliQ</div>
+            <nav class="nav-links">
+                <a href="{% url 'dashboard' %}">Dashboard</a>
+                <a href="{% url 'profile' %}">Profile</a>
+                <a href="{% url 'categories' %}">Categories</a>
+                <a href="{% url 'my_quizzes' %}">My Quizzes</a>
+            </nav>
+        </div>
+        <div class="nav-right">
+            <span class="nav-username">Hi, {{ user.username }}</span>
+            <a href="{% url 'landing' %}" class="logout-btn">Logout</a>
+        </div>
+    </header>
+
+    <div class="quiz-container" style="margin-top: 100px;">
+        <div class="result-header">
+            <div class="score-circle">
+                <div class="score-value">{{ attempt.score }}</div>
+                <div class="score-label">OUT OF {{ attempt.total_questions }}</div>
+            </div>
+            <h1 style="color: #fff;">Assessment Concept Report</h1>
+            <p style="color: #ff8c00; font-weight: 600;">{{ attempt.subcategory.name }}</p>
+        </div>
+        <div class="review-section">
+            <h2 style="color: #fff; margin-bottom: 30px;">Detailed Analysis</h2>
+            {% for question in attempt.questions.all %}
+            <div class="result-card {% if question.is_correct %}correct{% else %}wrong{% endif %}">
+                <div class="status-badge {% if question.is_correct %}correct_badge{% else %}wrong_badge{% endif %}">
+                    {% if question.is_correct %}CORRECT{% else %}INCORRECT{% endif %}
+                </div>
+                <h3 style="color: #fff; margin-bottom: 20px; font-size: 18px;">{{ question.question_text }}</h3>
+                <div class="options-grid" style="pointer-events: none;">
+                    {% for option in question.options %}
+                    <div class="option-item 
+                    {% if option == question.correct_answer %}selected{% endif %}
+                    {% if option == question.user_answer and not question.is_correct %}wrong-selection{% endif %}">
+                        <div class="option-radio-circle"></div>
+                        <span class="option-text">{{ option }}</span>
+                    </div>
+                    {% endfor %}
+                </div>
+                {% if question.explanation and not question.is_correct %}
+                <div class="explanation-box">
+                    <div class="explanation-title">AI Insight & Explanation</div>
+                    <p style="color: #ccc; font-size: 14px; line-height: 1.6; margin: 0;">{{ question.explanation }}</p>
+                </div>
+                {% endif %}
+            </div>
+            {% endfor %}
+        </div>
+        <div class="resources-section"
+            style="margin-top: 50px; text-align: center; border-top: 1px solid rgba(255,255,255,0.1); padding-top: 40px;">
+            <h2 style="color: #fff; margin-bottom: 20px;">Personalized Learning Resources</h2>
+            <p style="color: #bbb; margin-bottom: 30px;">Based on your performance, AI recommends these topics for
+                review:</p>
+            <div class="resources-grid">
+                {% for resource in processed_resources %}
+                <a href="{{ resource.url }}" target="_blank" class="resource-tag">{{ resource.title }}</a>
+                {% endfor %}
+            </div>
+        </div>
+        <div class="nav-controls" style="justify-content: center; margin-top: 60px; gap: 20px;">
+            <a href="{% url 'my_quizzes' %}" class="btn-secondary" style="text-decoration: none;">Back to History</a>
+            <a href="{% url 'categories' %}" class="btn-primary" style="text-decoration: none;">Finish & Return Home</a>
+        </div>
+    </div>
+    <style>
+        .wrong-selection {
+            border-color: #ff4d4d !important;
+            background: rgba(255, 77, 77, 0.1) !important;
+        }
+
+        .wrong-selection .option-text {
+            color: #ff4d4d !important;
+        }
+
+        .wrong-selection .option-radio-circle {
+            border-color: #ff4d4d !important;
+        }
+
+        .wrong-selection .option-radio-circle::after {
+            background: #ff4d4d !important;
+        }
+    </style>
+</body>
+
+</html>

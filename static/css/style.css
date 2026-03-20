@@ -1,0 +1,357 @@
+/* =========================
+   GLOBAL RESET & BASE
+========================= */
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+  font-family: "Segoe UI", system-ui, sans-serif;
+}
+
+body {
+  background: #0d0d0d;
+  color: #ffffff;
+  min-height: 100vh;
+  overflow-x: hidden;
+  display: flex;
+  flex-direction: column;
+}
+
+/* Auth pages specific: Prevent body scroll, move to wrapper */
+body.auth-page {
+  height: 100vh;
+  overflow: hidden;
+}
+
+/* =========================
+   NAVBAR (LANDING PAGE)
+========================= */
+.navbar {
+  width: 100%;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 22px 80px;
+  z-index: 10;
+}
+
+.logo {
+  font-size: 22px;
+  font-weight: 700;
+  color: #ff8c00;
+}
+
+.nav-actions {
+  display: flex;
+  align-items: center;
+  gap: 20px;
+}
+
+.nav-link {
+  color: #ffffff;
+  text-decoration: none;
+  font-weight: 500;
+}
+
+.nav-btn {
+  padding: 10px 20px;
+  background: #ff8c00;
+  color: #000;
+  border-radius: 6px;
+  text-decoration: none;
+  font-weight: 600;
+}
+
+.user-info {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+}
+
+.nav-username {
+  font-size: 14px;
+  font-weight: 600;
+  color: #000;
+}
+
+/* =========================
+   HERO SECTION (LANDING)
+========================= */
+.hero {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  padding: 80px;
+  gap: 60px;
+  align-items: flex-start;
+}
+
+.hero-left {
+  align-self: flex-start;
+}
+
+.hero-left h1 {
+  font-size: 46px;
+  margin-bottom: 20px;
+  line-height: 1.2;
+}
+
+.hero-left p {
+  font-size: 16px;
+  color: #cccccc;
+  margin-bottom: 30px;
+  max-width: 480px;
+}
+
+.hero-btn {
+  display: inline-block;
+  padding: 14px 30px;
+  background: #ff8c00;
+  color: #000;
+  font-weight: 700;
+  border-radius: 8px;
+  text-decoration: none;
+}
+
+.hero-right {
+  display: flex;
+  justify-content: center;
+  /* keeps image nicely placed */
+}
+
+.hero-right img {
+  width: 100%;
+  max-width: 520px;
+  border-radius: 14px;
+  box-shadow: 0 0 40px rgba(255, 140, 0, 0.25);
+}
+
+/* =========================
+   CENTER WRAPPER (AUTH ONLY)
+========================= */
+.center-wrapper {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 20px;
+  overflow-y: auto;
+}
+
+/* =========================
+   AUTH CARD (LOGIN / REGISTER)
+========================= */
+.auth-card {
+  background: #1a1a1a;
+  width: 100%;
+  max-width: 420px;
+  padding: 44px;
+  border-radius: 16px;
+  box-shadow: 0 20px 45px rgba(0, 0, 0, 0.65);
+}
+
+.auth-card h2 {
+  font-size: 28px;
+  font-weight: 700;
+  margin-bottom: 6px;
+}
+
+.subtitle {
+  font-size: 14px;
+  color: #bdbdbd;
+  margin-bottom: 26px;
+}
+
+/* =========================
+   FORM ELEMENTS
+========================= */
+.form-group {
+  margin-bottom: 20px;
+}
+
+label {
+  display: block;
+  font-size: 13px;
+  margin-bottom: 6px;
+  font-weight: 600;
+}
+
+input {
+  width: 100%;
+  padding: 14px;
+  border-radius: 10px;
+  border: 1px solid #333;
+  background: #0f0f0f;
+  color: #ffffff;
+  font-size: 14px;
+}
+
+input:focus {
+  outline: none;
+  border-color: #ff7a00;
+}
+
+.auth-footer {
+  margin-top: 18px;
+  text-align: center;
+  font-size: 14px;
+  color: #bdbdbd;
+}
+
+.auth-footer a {
+  color: #ff8c00;
+  text-decoration: none;
+  font-weight: 600;
+}
+
+.auth-footer a:hover {
+  text-decoration: underline;
+}
+
+.auth-switch {
+  margin-top: 18px;
+  font-size: 14px;
+  text-align: center;
+  color: #bdbdbd;
+}
+
+.auth-switch a {
+  color: #ff8c00;
+  font-weight: 600;
+  text-decoration: none;
+}
+
+.auth-switch a:hover {
+  text-decoration: underline;
+}
+
+/* =========================
+   BUTTONS
+========================= */
+.btn-primary {
+  width: 100%;
+  padding: 14px;
+  border-radius: 10px;
+  border: none;
+  background: #ff7a00;
+  color: #000;
+  font-size: 15px;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.btn-primary:hover {
+  background: #ff8c1a;
+}
+
+/* =========================
+   FORM ERROR
+========================= */
+.form-error {
+  margin-top: 14px;
+  font-size: 13px;
+  color: #ff6b6b;
+  text-align: center;
+}
+
+/* =========================
+   FORGOT PASSWORD LINK INSIDE LOGIN CARD
+========================= */
+.forgot-link {
+  display: block;
+  font-size: 13px;
+  font-weight: 600;
+  color: #ff8c00;
+  /* Orange theme color */
+  text-decoration: none;
+  text-align: right;
+  /* Align right inside form-group */
+  margin-top: -15px;
+  margin-bottom: 20px;
+  /* Small spacing from input */
+  transition: color 0.3s ease;
+}
+
+.forgot-link:hover {
+  color: #ff7a00;
+  /* Slightly brighter on hover */
+  text-decoration: underline;
+}
+
+/* =========================
+   RESPONSIVE
+========================= */
+@media (max-width: 900px) {
+  .hero {
+    grid-template-columns: 1fr;
+    text-align: center;
+    padding: 40px;
+  }
+
+  .hero-left p {
+    margin: 0 auto 30px;
+  }
+
+  .navbar {
+    padding: 20px 30px;
+  }
+
+  .auth-card {
+    padding: 30px 20px;
+  }
+}
+
+/* =========================
+   REMEMBER ME CHECKBOX (CUSTOM STYLE)
+========================= */
+.remember-me {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-top: -10px;
+  margin-bottom: 18px;
+}
+
+/* Hide default checkbox */
+.remember-me input[type="checkbox"] {
+  appearance: none;
+  -webkit-appearance: none;
+  width: 5px;
+  /* reduced size */
+  height: 5px;
+  border: 1.5px solid #ff8c00;
+  border-radius: 3px;
+  background: transparent;
+  cursor: pointer;
+  display: flex;
+  /* center tick */
+  align-items: center;
+  justify-content: center;
+}
+
+/* Checked state */
+.remember-me input[type="checkbox"]:checked {
+  background: transparent;
+}
+
+/* Tick mark */
+.remember-me input[type="checkbox"]:checked::after {
+  content: "✓";
+  font-size: 11px;
+  /* smaller tick */
+  color: #ff8c00;
+  font-weight: 700;
+  line-height: 1;
+}
+
+/* Label */
+.remember-me label {
+  font-size: 13px;
+  font-weight: 600;
+  color: #bdbdbd;
+  cursor: pointer;
+}
+
+/* Hover effect */
+.remember-me label:hover {
+  color: #ffffff;
+}

@@ -1,0 +1,236 @@
+{% load static %}
+<!doctype html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>IntelliQ - Dashboard</title>
+  <link rel="icon" href="{% static 'images/favicon.png' %}" type="image/png">
+  <link rel="stylesheet" href="/static/css/dashboard.css" />
+</head>
+
+<body>
+
+  <!-- NAVBAR -->
+  <header class="navbar">
+    <div class="nav-left">
+      <div class="logo">IntelliQ</div>
+
+      <nav class="nav-links">
+        <a href="{% url 'dashboard' %}" class="active">Dashboard</a>
+        <a href="{% url 'profile' %}">Profile</a>
+        <a href="{% url 'categories' %}">Categories</a>
+        <a href="{% url 'my_quizzes' %}">My Quizzes</a>
+        <a href="{% url 'leaderboard' %}">Leaderboard</a>
+      </nav>
+    </div>
+
+    <div class="nav-right">
+      {% if user.is_authenticated %}
+      <span class="nav-username">Hi, {{ user.username }}</span>
+      <a href="{% url 'landing' %}" class="logout-btn">Logout</a>
+      {% endif %}
+    </div>
+  </header>
+
+  <!-- MAIN CONTENT -->
+  <div class="main-content">
+
+    <!-- TOP SECTION -->
+    <div class="topbar" style="display: flex; justify-content: space-between; align-items: center;">
+      <div class="breadcrumbs">User Analytics Overview</div>
+    </div>
+
+    <!-- STAT CARDS -->
+    <div class="cards-row">
+      <div class="card red">
+        <p class="date">Quizzes Taken</p>
+        <h2>{{ quizzes_taken }}</h2>
+      </div>
+
+      <div class="card purple">
+        <p class="date">Total Attempts</p>
+        <h2>{{ total_attempts }}</h2>
+      </div>
+
+      <div class="card orange">
+        <p class="date">Avg Score</p>
+        <h2>{{ avg_score }}%</h2>
+      </div>
+    </div>
+
+    <!-- INCOMPLETE QUIZZES SECTION -->
+    {% if incomplete_attempts %}
+    <div
+      style="background: rgba(26, 26, 26, 0.4); border: 1px solid rgba(255, 140, 0, 0.2); border-radius: 15px; padding: 25px; margin-bottom: 30px;">
+      <h3 style="color: #ff8c00; margin-bottom: 20px;">Incomplete Quizzes</h3>
+      <div style="display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 20px;">
+        {% for attempt in incomplete_attempts %}
+        <div style="background: rgba(0, 0, 0, 0.3); border: 1px solid #333; border-radius: 10px; padding: 15px;">
+          <h4 style="color: #fff; margin: 0 0 10px 0;">{{ attempt.subcategory.name }}</h4>
+          <p style="color: #888; font-size: 13px; margin-bottom: 5px;">Started: {{ attempt.started_at|date:"M d, Y" }}
+            {{ attempt.started_at|date:"g:i A" }}</p>
+          <div
+            style="background: rgba(255, 255, 255, 0.1); height: 6px; border-radius: 3px; margin-bottom: 15px; overflow: hidden; position: relative;">
+            <div class="progress-bar-fill" style="background: #ff8c00; height: 100%; transition: width 0.4s ease;"
+              data-width="{{ attempt.completion_percent|default:0 }}">
+            </div>
+          </div>
+          <div style="display: flex; gap: 10px;">
+            <a href="{% url 'resume_quiz' attempt.id %}" class="btn-primary"
+              style="flex: 1; text-align: center; padding: 8px; font-size: 13px; text-decoration: none; border-radius: 5px; margin: 0;">Resume
+              ({{ attempt.completion_percent }}%)</a>
+            <a href="{% url 'abandon_quiz' attempt.id %}" class="btn-secondary"
+              style="flex: 1; text-align: center; padding: 8px; font-size: 13px; text-decoration: none; border-radius: 5px; margin: 0; color: #ff4444; border-color: rgba(255,68,68,0.3);"
+              onclick="return confirm('Abandon this quiz forever?');">Abandon</a>
+          </div>
+        </div>
+        {% endfor %}
+      </div>
+    </div>
+    {% endif %}
+
+    <!-- ANALYTICS SECTION -->
+    <div class="analytics-row" style="display: flex; gap: 30px; margin-bottom: 30px; flex-wrap: wrap;">
+      <!-- Participation Graph -->
+      <div class="unique-participants"
+        style="flex: 1; min-width: 400px; background: #1a1a1a; padding: 25px; border-radius: 18px; border: 1px solid #262626;">
+        <h3 style="margin-bottom: 20px; color: #ff8c00;">Quiz Participation (Last 15 Days)</h3>
+        <div class="chart-container" style="height: 250px; position: relative;">
+          <canvas id="participationChart"></canvas>
+        </div>
+      </div>
+
+      <!-- Streak Counter -->
+      <div class="streak-card"
+        style="flex: 0 0 250px; background: #1a1a1a; padding: 25px; border-radius: 18px; border: 1px solid #262626; display: flex; flex-direction: column; align-items: center; justify-content: center; text-align: center;">
+        <div style="font-size: 50px; margin-bottom: 10px;">🔥</div>
+        <h2 style="font-size: 36px; color: #ff8c00; margin-bottom: 5px;">{{ total_active_days }}</h2>
+        <p style="color: #888; font-size: 14px; text-transform: uppercase; letter-spacing: 1px; font-weight: 700;">Total
+          Active Days</p>
+      </div>
+    </div>
+
+    <!-- ACTIVITY HEATMAP SECTION -->
+    <div class="activity-heatmap-section"
+      style="background: #1a1a1a; padding: 25px; border-radius: 18px; border: 1px solid #262626; margin-bottom: 30px;">
+      <h3 style="margin-bottom: 20px; color: #ff8c00;">Assessment Activity Streaks</h3>
+      <div class="heatmap-wrapper" style="overflow-x: auto; padding-bottom: 10px;">
+        <div id="heatmap-container" class="heatmap-grid"></div>
+      </div>
+      <div class="heatmap-footer"
+        style="display: flex; justify-content: space-between; align-items: center; margin-top: 15px;">
+        <div style="color: #666; font-size: 12px;">Last 365 days of activity</div>
+        <div class="heatmap-legend" style="display: flex; align-items: center; gap: 8px; font-size: 12px; color: #888;">
+          <span>Less</span>
+          <div class="heatmap-cell" style="background: #262626;"></div>
+          <div class="heatmap-cell active-1"></div>
+          <div class="heatmap-cell active-2"></div>
+          <div class="heatmap-cell active-3"></div>
+          <span>More</span>
+        </div>
+      </div>
+    </div>
+
+  </div>
+
+  <!-- SCRIPTS -->
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <script>
+    // Participation Chart
+    const ctx = document.getElementById('participationChart').getContext('2d');
+    new Chart(ctx, {
+      type: 'line',
+      data: {
+        labels: JSON.parse('{{ participation_labels|safe|escapejs }}'),
+        datasets: [{
+          label: 'Attempts',
+          data: JSON.parse('{{ participation_values|safe|escapejs }}'),
+          borderColor: '#ff8c00',
+          backgroundColor: 'rgba(255, 140, 0, 0.1)',
+          fill: true,
+          tension: 0.4,
+          pointRadius: 4,
+          pointBackgroundColor: '#ff8c00',
+          borderWidth: 2
+        }]
+      },
+      options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        plugins: {
+          legend: { display: false },
+          tooltip: {
+            backgroundColor: '#1a1a1a',
+            titleColor: '#ff8c00',
+            bodyColor: '#fff',
+            borderColor: '#333',
+            borderWidth: 1
+          }
+        },
+        scales: {
+          y: {
+            beginAtZero: true,
+            grid: { color: 'rgba(255, 255, 255, 0.05)' },
+            ticks: { color: '#888', stepSize: 1, precision: 0 }
+          },
+          x: {
+            grid: { display: false },
+            ticks: { color: '#888' }
+          }
+        }
+      }
+    });
+
+    // Optimized Heatmap Logic (GitHub/LeetCode Style)
+    const heatmapJson = JSON.parse('{{ heatmap_json|safe|escapejs }}');
+    const container = document.getElementById('heatmap-container');
+
+    // 1. Find the most recent Saturday (end of the current week)
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    const dayOfWeek = today.getDay(); // 0 is Sun, 6 is Sat
+    const daysUntilNextSat = 6 - dayOfWeek;
+    const endDate = new Date(today);
+    endDate.setDate(today.getDate() + daysUntilNextSat);
+
+    // 2. Go back exactly 371 days (53 weeks) from that Saturday to find the start Sunday
+    const totalDays = 370; // 53 * 7 - 1
+    const startDate = new Date(endDate);
+    startDate.setDate(endDate.getDate() - totalDays);
+
+    // 3. Generate the grid
+    for (let i = 0; i <= totalDays; i++) {
+      const currentDate = new Date(startDate);
+      currentDate.setDate(startDate.getDate() + i);
+
+      // Fix timezone shift: Get YYYY-MM-DD in local time
+      const year = currentDate.getFullYear();
+      const month = String(currentDate.getMonth() + 1).padStart(2, '0');
+      const day = String(currentDate.getDate()).padStart(2, '0');
+      const dateString = `${year}-${month}-${day}`;
+
+      const count = heatmapJson[dateString] || 0;
+
+      const cell = document.createElement('div');
+      cell.className = 'heatmap-cell';
+      if (count > 0) {
+        if (count >= 5) cell.classList.add('active-3');
+        else if (count >= 3) cell.classList.add('active-2');
+        else cell.classList.add('active-1');
+      }
+
+      // Show actual date in tooltip
+      cell.title = `${currentDate.toDateString()}: ${count} ${count === 1 ? 'quiz' : 'quizzes'}`;
+      container.appendChild(cell);
+    }
+
+    // Apply dynamic progress bar widths (silences IDE CSS-in-HTML errors)
+    document.querySelectorAll('.progress-bar-fill').forEach(el => {
+      el.style.width = el.getAttribute('data-width') + '%';
+    });
+  </script>
+</body>
+
+</html>

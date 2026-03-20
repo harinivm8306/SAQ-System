@@ -1,0 +1,158 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Profile - IntelliQ</title>
+  <link rel="icon" href="{% static 'images/favicon.png' %}" type="image/png">
+  <link rel="stylesheet" href="{% static 'css/dashboard.css' %}" />
+  <link rel="stylesheet" href="/static/css/profile.css" />
+</head>
+
+<body>
+
+
+  <!-- NAVBAR -->
+  <header class="navbar">
+    <div class="nav-left">
+      <div class="logo">IntelliQ</div>
+
+      <nav class="nav-links">
+        <a href="{% url 'dashboard' %}">Dashboard</a>
+        <a href="{% url 'profile' %}" class="active">Profile</a>
+        <a href="{% url 'categories' %}">Categories</a>
+        <a href="{% url 'my_quizzes' %}">My Quizzes</a>
+        <a href="{% url 'leaderboard' %}">Leaderboard</a>
+      </nav>
+    </div>
+
+    <div class="nav-right">
+      {% if user.is_authenticated %}
+      <span class="nav-username">Hi, {{ user.username }}</span>
+      <a href="{% url 'landing' %}" class="logout-btn">Logout</a>
+      {% endif %}
+    </div>
+  </header>
+  <div class="profile-container">
+    {% if messages %}
+    <div class="messages" style="margin-bottom: 20px; text-align: center;">
+      {% for message in messages %}
+      <div class="alert alert-{{ message.tags }}"
+        style="padding: 10px; background-color: #d4edda; color: #155724; border: 1px solid #c3e6cb; border-radius: 5px;">
+        {{ message }}
+      </div>
+      {% endfor %}
+    </div>
+    {% endif %}
+    <h2>Update Profile</h2>
+
+    <div class="profile-columns">
+      <!-- Left Column: Preview -->
+      <div class="profile-preview">
+        <div class="avatar-container">
+          {% if profile.avatar %}
+          <img src="{{ profile.avatar.url }}" id="previewAvatar" class="avatar" />
+          {% else %}
+          <div class="avatar-placeholder" id="avatarPlaceholder"></div>
+          {% endif %}
+          <label for="avatarInput" class="avatar-label">Update Avatar</label>
+        </div>
+
+        <h3 id="previewFullName">{{ profile.full_name|default:"Your Name" }}</h3>
+        <p style="color: #ff8c00; font-size: 14px; margin-bottom: 20px;">@{{ request.user.username }}</p>
+        <p id="previewBio" class="preview-bio" {% if not profile.bio %}style="display: none;" {% endif %}>
+          {{ profile.bio }}
+        </p>
+      </div>
+
+      <!-- Right Column: Form -->
+      <div class="profile-form">
+        <form method="POST" enctype="multipart/form-data" id="profileForm">
+          {% csrf_token %}
+
+          <!-- Hidden file input triggered by "Update Avatar" label -->
+          <input type="file" id="avatarInput" name="avatar" accept="image/*" style="display: none;"
+            onchange="previewImage(event)" />
+
+          <!-- Full Name -->
+          <div class="form-group">
+            <label>Full Name</label>
+            <input type="text" name="full_name" id="fullNameInput" value="{{ profile.full_name }}"
+              placeholder="Enter full name..." oninput="updatePreview()" required />
+          </div>
+
+          <!-- Username (Read-only) -->
+          <div class="form-group">
+            <label>Username (Cannot be changed)</label>
+            <input type="text" value="{{ request.user.username }}" disabled
+              style="opacity: 0.6; cursor: not-allowed;" />
+          </div>
+
+          <!-- Bio -->
+          <div class="form-group">
+            <label>Bio</label>
+            <textarea name="bio" id="bioInput" placeholder="Tell us about yourself..."
+              oninput="updatePreview()">{{ profile.bio }}</textarea>
+          </div>
+
+          <!-- Privacy -->
+          <div class="form-group" style="flex-direction: row; align-items: center; gap: 10px;">
+            <input {% if profile.show_on_leaderboard %}checked{% endif %} type="checkbox" name="show_on_leaderboard"
+              id="leaderboardCheck" style="width: auto; margin: 0;">
+            <label for="leaderboardCheck" style="margin: 0; cursor: pointer;">Show me on the public rankings
+              leaderboard</label>
+          </div>
+
+          <button type="submit" class="save-btn">Save Changes</button>
+        </form>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    function updatePreview() {
+      const fullName = document.getElementById('fullNameInput').value;
+      const bio = document.getElementById('bioInput').value;
+
+      const previewName = document.getElementById('previewFullName');
+      const previewBio = document.getElementById('previewBio');
+
+      previewName.textContent = fullName || "Your Name";
+
+      if (bio.trim()) {
+        previewBio.textContent = bio;
+        previewBio.style.display = 'block';
+      } else {
+        previewBio.style.display = 'none';
+      }
+    }
+
+    function previewImage(event) {
+      const input = event.target;
+      if (input.files && input.files[0]) {
+        const reader = new FileReader();
+        reader.onload = function (e) {
+          let previewImg = document.getElementById('previewAvatar');
+          if (!previewImg) {
+            // Replace placeholder if it exists
+            const placeholder = document.getElementById('avatarPlaceholder');
+            if (placeholder) {
+              previewImg = document.createElement('img');
+              previewImg.id = 'previewAvatar';
+              previewImg.className = 'avatar';
+              placeholder.parentNode.insertBefore(previewImg, placeholder);
+              placeholder.remove();
+            }
+          }
+          previewImg.src = e.target.result;
+        }
+        reader.readAsDataURL(input.files[0]);
+      }
+    }
+  </script>
+
+</body>
+
+</html>

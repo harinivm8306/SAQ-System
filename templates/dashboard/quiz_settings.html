@@ -1,0 +1,105 @@
+{% load static %}
+<!DOCTYPE html>
+<html>
+
+<head>
+  <title>Quiz Settings - IntelliQ</title>
+  <link rel="icon" href="{% static 'images/favicon.png' %}" type="image/png">
+  <link rel="stylesheet" href="{% static 'css/dashboard.css' %}">
+</head>
+
+<body>
+
+  <header class="navbar">
+    <div class="nav-left">
+      <div class="logo">IntelliQ</div>
+      <nav class="nav-links">
+        <a href="{% url 'dashboard' %}">Dashboard</a>
+        <a href="{% url 'profile' %}">Profile</a>
+        <a href="{% url 'categories' %}" class="active">Categories</a>
+        <a href="{% url 'my_quizzes' %}">My Quizzes</a>
+      </nav>
+    </div>
+  </header>
+
+  <div class="main-content">
+    <div class="settings-card">
+      <h2>Configure Your Quiz</h2>
+      <p style="text-align: center; color: #ff8c00; margin-bottom: 30px; font-weight: 600;">
+        Subcategory: {{ subcategory.name }}
+      </p>
+
+      <form method="POST">
+        {% csrf_token %}
+
+        <!-- Difficulty Selector -->
+        <div class="form-group-custom">
+          <label>Select Difficulty</label>
+          <div class="radio-group">
+            <div class="radio-option">
+              <input type="radio" name="difficulty" value="Easy" id="diff-easy" checked>
+              <label for="diff-easy" class="radio-label">Easy</label>
+            </div>
+            <div class="radio-option">
+              <input type="radio" name="difficulty" value="Medium" id="diff-medium">
+              <label for="diff-medium" class="radio-label">Medium</label>
+            </div>
+            <div class="radio-option">
+              <input type="radio" name="difficulty" value="Hard" id="diff-hard">
+              <label for="diff-hard" class="radio-label">Hard</label>
+            </div>
+          </div>
+        </div>
+
+        <!-- Question Count -->
+        <div class="form-group-custom">
+          <label for="num_questions">Number of Questions</label>
+          <select name="num_questions" id="num_questions" class="select-custom">
+            <option value="5">5 Questions</option>
+            <option value="10" selected>10 Questions</option>
+            <option value="15">15 Questions</option>
+          </select>
+        </div>
+
+        <!-- Timer Settings -->
+        <div class="form-group-custom">
+          <div style="display: flex; gap: 20px; align-items: center; margin-bottom: 10px;">
+            <div class="toggle-switch">
+              <span style="font-weight: 600; color: #ddd;">Enable Timer</span>
+              <label class="switch">
+                <input type="checkbox" name="timer" id="timer-toggle" checked onchange="toggleTimerDuration()">
+                <span class="slider"></span>
+              </label>
+            </div>
+            <div id="timer-duration-container" style="flex: 1;">
+              <label for="timer_duration" style="display: inline-block; margin-bottom: 5px;">Time (minutes)</label>
+              <input type="number" name="timer_duration" id="timer_duration" value="10" min="1" class="select-custom"
+                style="padding: 8px;">
+            </div>
+          </div>
+        </div>
+
+        <!-- AI Personalization -->
+        <div class="form-group-custom">
+          <label for="ai_comments">Personalize your quiz (AI Prompt)</label>
+          <textarea name="ai_comments" id="ai_comments" class="select-custom" rows="3"
+            placeholder="e.g. Focus on molecular biology, or include more networking protocol questions..."></textarea>
+        </div>
+
+        <button type="submit" class="btn-primary" style="margin-top: 20px;">Start Quiz</button>
+      </form>
+    </div>
+  </div>
+
+  <script>
+    function toggleTimerDuration() {
+      const toggle = document.getElementById('timer-toggle');
+      const container = document.getElementById('timer-duration-container');
+      container.style.opacity = toggle.checked ? '1' : '0.5';
+      document.getElementById('timer_duration').disabled = !toggle.checked;
+    }
+  </script>
+
+</body>
+
+</html>

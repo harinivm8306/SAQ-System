@@ -1,0 +1,52 @@
+{% extends "base.html" %} {% block content %}
+<div class="auth-card">
+  <h2>Create Account</h2>
+  <p class="subtitle">Start your assessment journey</p>
+
+  <form method="POST">
+    {% csrf_token %}
+
+    <div class="form-group">
+      <label>Username</label>
+      <input type="text" name="username" required />
+    </div>
+
+    <div class="form-group">
+      <label>Email</label>
+      <input type="email" name="email" required />
+    </div>
+
+    <div class="form-group">
+      <label>Password</label>
+      <input
+        type="password"
+        pattern="^(?=.*[A-Z])(?=.*[^A-Za-z0-9]).{8,}$"
+        title="Password must be at least 8 characters long, contain one uppercase letter and one special character."
+        name="password"
+        required
+      />
+    </div>
+
+    <div class="form-group">
+      <label>Confirm Password</label>
+      <input
+        type="password"
+        title="Password must be at least 8 characters long, contain one uppercase letter and one special character."
+        pattern="^(?=.*[A-Z])(?=.*[^A-Za-z0-9]).{8,}$"
+        name="confirm_password"
+        required
+      />
+    </div>
+
+    <button type="submit" class="btn-primary">Register</button>
+    {% if error %}
+    <p class="form-error">{{ error }}</p>
+    {% endif %}
+
+    <p class="auth-switch">
+      Already have an account?
+      <a href="{% url 'login' %}">Login</a>
+    </p>
+  </form>
+</div>
+{% endblock %}

@@ -1,0 +1,49 @@
+{% load static %}
+<!doctype html>
+<html>
+
+<head>
+  <title>IntelliQ - Subcategories</title>
+  <link rel="icon" href="{% static 'images/favicon.png' %}" type="image/png">
+  <link rel="stylesheet" href="{% static 'css/dashboard.css' %}" />
+</head>
+
+<body>
+  <header class="navbar">
+    <div class="nav-left">
+      <div class="logo">IntelliQ</div>
+
+      <nav class="nav-links">
+        <a href="{% url 'dashboard' %}">Dashboard</a>
+        <a href="{% url 'profile' %}">Profile</a>
+        <a href="{% url 'categories' %}" class="active">Categories</a>
+        <a href="{% url 'my_quizzes' %}">My Quizzes</a>
+      </nav>
+    </div>
+
+    <div class="nav-right">
+      {% if user.is_authenticated %}
+      <span class="nav-username">Hi, {{ user.username }}</span>
+      <a href="{% url 'landing' %}" class="logout-btn">Logout</a>
+      {% endif %}
+    </div>
+  </header>
+
+  <div class="main-content">
+    <h2>Subcategories in {{ category.name }}</h2>
+
+    <div class="category-container">
+      {% for subcategory in subcategories %}
+      <a href="{% url 'quiz_settings' subcategory.id %}" class="category-card" style="text-decoration: none;">
+        <div class="category-icon">{{ subcategory.icon }}</div>
+        <h3>{{ subcategory.name }}</h3>
+        <p>Start quiz in {{ subcategory.name }}</p>
+      </a>
+      {% empty %}
+      <p>No subcategories available.</p>
+      {% endfor %}
+    </div>
+  </div>
+</body>
+
+</html>

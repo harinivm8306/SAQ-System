@@ -1,0 +1,116 @@
+{% load static %}
+<!DOCTYPE html>
+<html>
+
+<head>
+    <title>Generating Your Quiz... - IntelliQ</title>
+    <link rel="icon" href="{% static 'images/favicon.png' %}" type="image/png">
+    <link rel="stylesheet" href="{% static 'css/dashboard.css' %}">
+</head>
+
+<body style="overflow: hidden;">
+
+    <header class="navbar">
+        <div class="nav-left">
+            <div class="logo">IntelliQ</div>
+            <nav class="nav-links">
+                <a href="{% url 'dashboard' %}">Dashboard</a>
+                <a href="{% url 'categories' %}">Categories</a>
+            </nav>
+        </div>
+    </header>
+
+    <div class="main-content">
+        <div class="scanner-container">
+            <!-- Document with scanning light -->
+            <div class="document">
+                <div class="scan-line"></div>
+                <div class="document-lines">
+                    <div class="line long"></div>
+                    <div class="line medium"></div>
+                    <div class="line short"></div>
+                    <div class="line long"></div>
+                    <div class="line short"></div>
+                    <div class="line medium"></div>
+                    <div class="line long"></div>
+                    <div class="line short"></div>
+                </div>
+            </div>
+
+            <!-- Progress and info -->
+            <div class="progress-container">
+                <h2 id="status-title" class="progress-text">ANALYZING TOPIC...</h2>
+                <p id="status-detail" style="color: #bbb; margin-bottom: 20px;">
+                    Gemini AI is crafting your personalized quiz for <b>{{ settings.subcategory_name }}</b>
+                </p>
+                <div class="progress-bar-bg">
+                    <div id="progress-fill" class="progress-bar-fill"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', function () {
+            const fill = document.getElementById('progress-fill');
+            const title = document.getElementById('status-title');
+            const detail = document.getElementById('status-detail');
+
+            let progress = 0;
+            const statusMessages = [
+                "INITIALIZING AI ENGINE...",
+                "SCANNING KNOWLEDGE BASE...",
+                "GENERATING COMPREHENSIVE QUESTIONS...",
+                "VALIDATING EXPLANATIONS...",
+                "OPTIMIZING QUIZ STRUCTURE...",
+                "FINALIZING ASSESSMENT..."
+            ];
+
+            const interval = setInterval(() => {
+                if (progress < 95) {
+                    progress += Math.random() * 3;
+                    if (progress > 95) progress = 95;
+                    fill.style.width = progress + '%';
+
+                    // Cycle through status messages based on progress
+                    const messageIndex = Math.min(
+                        Math.floor((progress / 95) * statusMessages.length),
+                        statusMessages.length - 1
+                    );
+                    title.innerText = statusMessages[messageIndex];
+                }
+            }, 600);
+
+            // Start AJAX call to generate quiz
+            fetch('{% url "generate_quiz_api" %}')
+                .then(response => response.json())
+                .then(data => {
+                    if (data.status === 'success') {
+                        progress = 100;
+                        fill.style.width = '100%';
+                        title.innerText = "QUIZ READY!";
+                        detail.innerText = "Redirecting to your assessment...";
+
+                        setTimeout(() => {
+                            window.location.href = data.redirect_url;
+                        }, 1500);
+                    } else {
+                        clearInterval(interval);
+                        title.innerText = "GENERATION FAILED";
+                        title.style.color = "#ff4d4d";
+                        detail.innerText = data.error || "An error occurred while generating the quiz.";
+                    }
+                })
+                .catch(error => {
+                    clearInterval(interval);
+                    title.innerText = "CONNECTION ERROR";
+                    title.style.color = "#ff4d4d";
+                    detail.innerText = "Could not connect to the AI service.";
+                    console.error('Error:', error);
+                });
+        });
+    </script>
+
+</body>
+
+</html>

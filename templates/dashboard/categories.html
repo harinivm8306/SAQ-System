@@ -1,0 +1,104 @@
+{% load static %}
+<!DOCTYPE html>
+<html>
+
+<head>
+    <title>Categories - IntelliQ</title>
+    <link rel="icon" href="{% static 'images/favicon.png' %}" type="image/png">
+    <link rel="stylesheet" href="{% static 'css/dashboard.css' %}">
+</head>
+
+<body>
+
+    <header class="navbar">
+        <div class="nav-left">
+            <div class="logo">IntelliQ</div>
+
+            <nav class="nav-links">
+                <a href="{% url 'dashboard' %}">Dashboard</a>
+                <a href="{% url 'profile' %}">Profile</a>
+                <a href="{% url 'categories' %}" class="active">Categories</a>
+                <a href="{% url 'my_quizzes' %}">My Quizzes</a>
+                <a href="{% url 'leaderboard' %}">Leaderboard</a>
+            </nav>
+        </div>
+
+        <div class="nav-right">
+            {% if user.is_authenticated %}
+            <span class="nav-username">Hi, {{ user.username }}</span>
+            <a href="{% url 'landing' %}" class="logout-btn">Logout</a>
+            {% else %}
+            <a href="{% url 'login' %}" class="login-btn">Login</a>
+            {% endif %}
+        </div>
+    </header>
+
+    <div class="main-content">
+        <div id="category-view">
+            <h2 style="text-align: center; margin-bottom: 40px; color: #ff8c00; font-size: 32px;">Explore Quiz
+                Categories</h2>
+            <div class="category-container">
+                {% for category in categories %}
+                <div class="category-card" onclick="showSubcategories('{{ category.id }}', '{{ category.name }}')">
+                    <div class="category-icon">{{ category.icon }}</div>
+                    <h3>{{ category.name }}</h3>
+                    <p>Explore quizzes in {{ category.name }}</p>
+                </div>
+                {% empty %}
+                <p>No categories available.</p>
+                {% endfor %}
+            </div>
+        </div>
+
+        {% for category in categories %}
+        <div id="subcategory-section-{{ category.id }}" class="subcategory-section">
+            <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 30px;">
+                <h2 style="color: #ff8c00;">{{ category.name }} Subcategories</h2>
+                <button onclick="backToCategories()" class="logout-btn" style="border: none; cursor: pointer;">← Back to
+                    Categories</button>
+            </div>
+
+            <div class="subcategory-grid">
+                {% for sub in category.subcategories.all %}
+                <a href="{% url 'quiz_settings' sub.id %}" class="subcategory-card">
+                    <div class="subcategory-icon">{{ sub.icon }}</div>
+                    <h3>{{ sub.name }}</h3>
+                    <p>Start a {{ sub.name }} quiz</p>
+                </a>
+                {% empty %}
+                <p>No subcategories found for this category.</p>
+                {% endfor %}
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+
+    <script>
+        function showSubcategories(categoryId, categoryName) {
+            // Hide category view
+            document.getElementById('category-view').style.display = 'none';
+
+            // Hide all subcategory sections first (safety)
+            const sections = document.querySelectorAll('.subcategory-section');
+            sections.forEach(s => s.style.display = 'none');
+
+            // Show target section
+            const target = document.getElementById('subcategory-section-' + categoryId);
+            if (target) {
+                target.style.display = 'block';
+            }
+        }
+
+        function backToCategories() {
+            // Show category view
+            document.getElementById('category-view').style.display = 'block';
+
+            // Hide all subcategory sections
+            const sections = document.querySelectorAll('.subcategory-section');
+            sections.forEach(s => s.style.display = 'none');
+        }
+    </script>
+
+</body>
+
+</html>

@@ -1,0 +1,46 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <title>IntelliQ</title>
+    <link rel="icon" href="{% static 'images/favicon.png' %}" type="image/png">
+    <link rel="stylesheet" href="{% static 'css/style.css' %}">
+</head>
+
+<body>
+
+    <!-- NAVBAR -->
+    <nav class="navbar">
+        <div class="logo">IntelliQ</div>
+
+        <div class="nav-actions">
+            <a href="{% url 'login' %}" class="nav-link">Login</a>
+            <a href="{% url 'register' %}" class="nav-btn">Sign Up</a>
+        </div>
+    </nav>
+
+    <!-- HERO SECTION -->
+    <section class="hero">
+        <div class="hero-left">
+            <h1>AI-Powered Smart Assessment Platform</h1>
+            <p>
+                Create intelligent quizzes, evaluate performance instantly,
+                and experience a modern assessment system built for students
+                and educators.
+            </p>
+
+            <a href="{% url 'login' %}" class="hero-btn">
+                Get Started
+            </a>
+        </div>
+
+        <div class="hero-right">
+            <img src="{% static 'images/Screenshot 2026-02-09 172447.png' %}" alt="App Preview">
+        </div>
+    </section>
+
+</body>
+
+</html>
