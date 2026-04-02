@@ -1,0 +1,284 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block content %}
+<div class="auth-card" style="max-width: 600px;">
+    <h2>Room #{{ room.code }}</h2>
+    <p class="subtitle">Topic: {{ room.topic }}</p>
+
+    <div class="room-stats">
+        <div class="stat-box">
+            <span class="stat-label">Members</span>
+            <span class="stat-value">{{ members_count }}</span>
+        </div>
+        <div class="stat-box">
+            <span class="stat-label">Status</span>
+            <span class="stat-value">{% if room.questions_data %}Ready{% else %}Waiting{% endif %}</span>
+        </div>
+    </div>
+
+    <div class="invite-box">
+        <label>Invite Link</label>
+        <div class="link-wrapper">
+            <input type="text" id="invite-link" value="{{ invite_link }}" readonly>
+            <button onclick="copyInviteLink()" class="copy-btn">Copy</button>
+        </div>
+    </div>
+
+    {% if is_creator %}
+    <div class="creator-controls">
+        <h3>Creator Panel</h3>
+        {% if room.questions_data %}
+        <button id="generate-btn" onclick="generateQuiz()" class="btn-primary" disabled>
+            Quiz Generated
+        </button>
+        {% else %}
+        <button id="generate-btn" onclick="generateQuiz()" class="btn-primary">
+            Generate Questions with AI
+        </button>
+        {% endif %}
+        <div id="status-message" class="status-msg"></div>
+    </div>
+    {% endif %}
+
+    <div class="quiz-status">
+        {% if room.questions_data %}
+        <div class="ready-info">
+            <p>Questions have been generated successfully! 🚀</p>
+            <!-- Here you can add a link to start the quiz for participants -->
+            {% if is_creator %}
+            <a href="{% url 'live_quiz' room.code %}" class="btn-primary"
+                style="background: #28a745; display: inline-block; text-decoration: none; padding: 10px 20px;">Open Live
+                Quiz Lobby</a>
+            {% else %}
+            <a href="{% url 'live_quiz' room.code %}" class="btn-primary"
+                style="background: #28a745; display: inline-block; text-decoration: none; padding: 10px 20px;">Join Quiz
+                Lobby</a>
+            {% endif %}
+        </div>
+
+        {% if is_creator %}
+        <div class="questions-preview">
+            <h3 style="color: #ff8c00; margin-bottom: 20px;">Questions Preview</h3>
+            {% for q in room.questions_data.questions %}
+            <div class="preview-card"
+                style="background: #1a1a1a; padding: 15px; border-radius: 8px; margin-bottom: 15px; border: 1px solid #333;">
+                <p><strong>Q{{ forloop.counter }}:</strong> {{ q.question }} <span
+                        style="font-size: 11px; padding: 3px 6px; background: #333; border-radius: 4px; color: #aaa; margin-left: 10px;">{{
+                        q.type|upper }}</span></p>
+
+                {% if q.type == 'mcq' %}
+                <ul style="margin-top: 10px; margin-left: 20px; color: #ccc;">
+                    {% for opt in q.options %}
+                    {% if opt == q.answer %}
+                    <li style="color: #28a745; font-weight: bold;">{{ opt }}</li>
+                    {% else %}
+                    <li>{{ opt }}</li>
+                    {% endif %}
+                    {% endfor %}
+                </ul>
+                <p style="margin-top: 5px; font-size: 13px; color: #28a745;">Answer: {{ q.answer }}</p>
+                {% elif q.type == 'typing' %}
+                <p style="margin-top: 10px; font-size: 13px; color: #28a745;">Answer: {{ q.answer }}</p>
+                {% elif q.type == 'arrange' %}
+                <ol style="margin-top: 10px; margin-left: 20px; color: #ccc;">
+                    {% for item in q.items %}
+                    <li style="color: #28a745; font-weight: 500;">{{ item }}</li>
+                    {% endfor %}
+                </ol>
+                {% elif q.type == 'match' %}
+                <div style="margin-top: 10px; color: #ccc; font-size: 14px;">
+                    {% for key, val in q.match_pairs.items %}
+                    <div><strong>{{ key }}</strong> <span style="color: #28a745;">&rarr; {{ val }}</span></div>
+                    {% endfor %}
+                </div>
+                {% endif %}
+
+                <p style="margin-top: 10px; font-size: 13px; color: #888;"><em>Explanation: {{ q.explanation }}</em></p>
+            </div>
+            {% endfor %}
+        </div>
+        {% endif %}
+
+        {% else %}
+        <div class="waiting-info">
+            <p>Waiting for the creator to generate questions...</p>
+            <div class="spinner"></div>
+        </div>
+        {% endif %}
+    </div>
+
+    <div class="auth-footer">
+        <a href="{% url 'dashboard' %}">Back to Dashboard</a>
+    </div>
+</div>
+
+<script>
+    function copyInviteLink() {
+        var copyText = document.getElementById("invite-link");
+        copyText.select();
+        copyText.setSelectionRange(0, 99999);
+        navigator.clipboard.writeText(copyText.value);
+
+        const btn = document.querySelector('.copy-btn');
+        btn.innerText = "Copied!";
+        setTimeout(() => { btn.innerText = "Copy"; }, 2000);
+    }
+
+    function generateQuiz() {
+        const btn = document.getElementById('generate-btn');
+        const msg = document.getElementById('status-message');
+        btn.disabled = true;
+        btn.innerText = "Generating with AI...";
+        msg.innerText = "Estimated time: 10-15 seconds. Please wait...";
+
+        fetch("{% url 'generate_room_quiz' room.code %}", {
+            method: "POST",
+            headers: {
+                "X-CSRFToken": "{{ csrf_token }}"
+            }
+        })
+            .then(response => response.json())
+            .then(data => {
+                if (data.status === 'success') {
+                    msg.innerText = "Success! Questions generated.";
+                    msg.style.color = "#28a745";
+                    location.reload();
+                } else {
+                    msg.innerText = "Error: " + data.error;
+                    msg.style.color = "#ff6b6b";
+                    btn.disabled = false;
+                    btn.innerText = "Generate Questions with AI";
+                }
+            })
+            .catch(err => {
+                msg.innerText = "Request failed.";
+                msg.style.color = "#ff6b6b";
+                btn.disabled = false;
+                btn.innerText = "Generate Questions with AI";
+            });
+    }
+</script>
+
+<style>
+    .room-stats {
+        display: flex;
+        gap: 15px;
+        margin: 20px 0;
+    }
+
+    .stat-box {
+        flex: 1;
+        background: #0f0f0f;
+        padding: 15px;
+        border-radius: 10px;
+        border: 1px solid #333;
+        text-align: center;
+    }
+
+    .stat-label {
+        display: block;
+        font-size: 11px;
+        text-transform: uppercase;
+        color: #888;
+        margin-bottom: 5px;
+    }
+
+    .stat-value {
+        font-size: 18px;
+        font-weight: 700;
+        color: #ff8c00;
+    }
+
+    .invite-box {
+        margin-top: 25px;
+    }
+
+    .link-wrapper {
+        display: flex;
+        gap: 10px;
+    }
+
+    .copy-btn {
+        padding: 10px 15px;
+        background: #333;
+        color: #fff;
+        border: none;
+        border-radius: 8px;
+        cursor: pointer;
+        font-weight: 600;
+    }
+
+    .copy-btn:hover {
+        background: #444;
+    }
+
+    .creator-controls {
+        margin-top: 30px;
+        padding-top: 20px;
+        border-top: 1px solid #333;
+    }
+
+    .creator-controls h3 {
+        margin-bottom: 15px;
+        font-size: 16px;
+        color: #ff8c00;
+    }
+
+    .status-msg {
+        margin-top: 10px;
+        font-size: 13px;
+        color: #888;
+    }
+
+    .quiz-status {
+        margin-top: 30px;
+        background: #0f0f0f;
+        padding: 20px;
+        border-radius: 12px;
+        text-align: center;
+    }
+
+    .spinner {
+        width: 30px;
+        height: 30px;
+        border: 3px solid #333;
+        border-top-color: #ff8c00;
+        border-radius: 50%;
+        animation: spin 1s linear infinite;
+        margin: 15px auto;
+    }
+
+    @keyframes spin {
+        to {
+            transform: rotate(360deg);
+        }
+    }
+
+    .questions-preview {
+        margin-top: 30px;
+        text-align: left;
+        max-height: 50vh;
+        overflow-y: auto;
+        padding-right: 10px;
+    }
+
+    .questions-preview::-webkit-scrollbar {
+        width: 6px;
+    }
+
+    .questions-preview::-webkit-scrollbar-track {
+        background: rgba(0, 0, 0, 0.2);
+        border-radius: 4px;
+    }
+
+    .questions-preview::-webkit-scrollbar-thumb {
+        background: #333;
+        border-radius: 4px;
+    }
+
+    .questions-preview::-webkit-scrollbar-thumb:hover {
+        background: #ff8c00;
+    }
+</style>
+{% endblock %}

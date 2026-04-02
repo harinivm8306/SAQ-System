@@ -1,0 +1,233 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block content %}
+<div class="auth-card" style="max-width: 800px; text-align: center;">
+    <h2>Room #{{ room.code }} - {{ room.topic }}</h2>
+
+    <!-- WAITING SCREEN -->
+    <div id="screen-waiting" style="display: none;">
+        <h3>Waiting for Players... <span id="members-count" style="color: #ff8c00;">0</span> Joined</h3>
+        <div class="spinner" style="margin: 20px auto;"></div>
+        {% if is_creator %}
+        <button id="start-btn" onclick="nextQuestion()" class="btn-primary" style="margin-top: 20px;">Start
+            Quiz</button>
+        {% else %}
+        <p>Wait for the creator to start the quiz.</p>
+        {% endif %}
+    </div>
+
+    <!-- ACTIVE QUESTION SCREEN -->
+    <div id="screen-active" style="display: none;">
+        <h3 style="color: #ff8c00;">Question <span id="q-index"></span> / <span id="q-total"></span></h3>
+        <h4 id="time-left" style="font-size: 24px; color: #ff6b6b; margin-bottom: 20px;">--</h4>
+
+        <div
+            style="background: #1a1a1a; padding: 20px; border-radius: 8px; border: 1px solid #333; margin-bottom: 20px;">
+            <p id="q-text" style="font-size: 18px; font-weight: bold; margin-bottom: 20px;"></p>
+            <div id="q-options" style="display: flex; flex-direction: column; gap: 10px;"></div>
+        </div>
+
+        {% if is_creator %}
+        <p style="color: #888;">As creator, wait for the timer to finish.</p>
+        {% else %}
+        <div id="answer-feedback" style="font-weight: bold; margin-top: 10px;"></div>
+        {% endif %}
+    </div>
+
+    <!-- LEADERBOARD SCREEN -->
+    <div id="screen-leaderboard" style="display: none;">
+        <h3 style="color: #ff8c00; margin-bottom: 20px;">Leaderboard</h3>
+        <table style="width: 100%; border-collapse: collapse; margin-bottom: 20px;" id="lb-table">
+            <thead>
+                <tr style="border-bottom: 1px solid #333;">
+                    <th style="padding: 10px; text-align: left;">Rank</th>
+                    <th style="padding: 10px; text-align: left;">Player</th>
+                    <th style="padding: 10px; text-align: left;">Score</th>
+                </tr>
+            </thead>
+            <tbody></tbody>
+        </table>
+
+        {% if is_creator %}
+        <button id="next-btn" onclick="nextQuestion()" class="btn-primary">Next Question</button>
+        {% else %}
+        <p style="color: #888;">Waiting for creator to proceed...</p>
+        {% endif %}
+    </div>
+
+    <!-- FINISHED SCREEN -->
+    <div id="screen-finished" style="display: none;">
+        <h2 style="color: #28a745; margin-bottom: 20px;">Quiz Finished! 🏆</h2>
+        <a href="{% url 'download_report' room.code %}" target="_blank" class="btn-primary"
+            style="background: #ff8c00; text-decoration: none;">Download Report (PDF)</a>
+        <br><br>
+        <a href="{% url 'dashboard' %}" style="color: #aaa;">Back to Dashboard</a>
+    </div>
+
+</div>
+
+<script>
+    const roomCode = "{{ room.code }}";
+    const isCreator = "{{ is_creator }}" === "True";
+    let currentStatus = "";
+    let questionIndex = -1;
+    let answered = false;
+
+    function showScreen(screenId) {
+        document.getElementById('screen-waiting').style.display = 'none';
+        document.getElementById('screen-active').style.display = 'none';
+        document.getElementById('screen-leaderboard').style.display = 'none';
+        document.getElementById('screen-finished').style.display = 'none';
+        document.getElementById(screenId).style.display = 'block';
+    }
+
+    function renderQuestion(q) {
+        if (!q) {
+            document.getElementById('q-text').innerText = "Questions not ready or end of quiz.";
+            return;
+        }
+        document.getElementById('q-text').innerText = q.question;
+        const optionsDiv = document.getElementById('q-options');
+        optionsDiv.innerHTML = '';
+
+        if (isCreator) {
+            optionsDiv.innerHTML = '<p style="color:#888">Participants are answering...</p>';
+            return;
+        }
+
+        if (q.options) {
+            q.options.forEach(opt => {
+                const btn = document.createElement('button');
+                btn.className = 'btn-primary';
+                btn.style.background = '#333';
+                btn.innerText = opt;
+                btn.onclick = () => submitAnswer(opt);
+                optionsDiv.appendChild(btn);
+            });
+        } else if (q.type === 'typing') {
+            const inp = document.createElement('input');
+            inp.type = 'text';
+            inp.id = 'typing-ans';
+            inp.style.padding = '10px';
+            inp.style.borderRadius = '5px';
+            inp.style.width = '100%';
+
+            const btn = document.createElement('button');
+            btn.className = 'btn-primary';
+            btn.innerText = 'Submit';
+            btn.style.marginTop = '10px';
+            btn.onclick = () => submitAnswer(document.getElementById('typing-ans').value);
+
+            optionsDiv.appendChild(inp);
+            optionsDiv.appendChild(btn);
+        } else {
+            optionsDiv.innerHTML = `<p style="color:#ff8c00">Please provide the answer matching the sequence or pairs appropriately on your local sheet, this mode relies on correct string formatting.</p>
+            <input type='text' id='complex-ans' placeholder='Enter exact response...' style='padding:10px; border-radius:5px; width:100%'>
+            <button class='btn-primary' style='margin-top:10px;' onclick='submitAnswer(document.getElementById("complex-ans").value)'>Submit</button>`;
+        }
+    }
+
+    function renderLeaderboard(lb) {
+        const tbody = document.querySelector('#lb-table tbody');
+        tbody.innerHTML = '';
+        lb.forEach((m, idx) => {
+            tbody.innerHTML += `
+                <tr style="border-bottom: 1px solid #222;">
+                    <td style="padding: 10px;">${idx + 1}</td>
+                    <td style="padding: 10px;">${m.username}</td>
+                    <td style="padding: 10px; font-weight:bold; color: #28a745;">${m.score}</td>
+                </tr>
+            `;
+        });
+    }
+
+    function submitAnswer(ans) {
+        if (answered) return;
+        answered = true;
+
+        fetch(`/rooms/api/answer/${roomCode}/`, {
+            method: 'POST',
+            body: JSON.stringify({ 'answer': ans }),
+            headers: { "X-CSRFToken": "{{ csrf_token }}" }
+        })
+            .then(r => r.json())
+            .then(d => {
+                const fb = document.getElementById('answer-feedback');
+                if (d.status === 'success') {
+                    fb.innerText = d.correct ? `Correct! +${d.points} points` : 'Incorrect!';
+                    fb.style.color = d.correct ? '#28a745' : '#ff6b6b';
+                }
+            });
+    }
+
+    function nextQuestion() {
+        fetch(`/rooms/api/start/${roomCode}/`, { method: 'POST', headers: { "X-CSRFToken": "{{ csrf_token }}" } });
+    }
+
+    // Polling loop
+    setInterval(() => {
+        fetch(`/rooms/api/status/${roomCode}/`)
+            .then(r => r.json())
+            .then(data => {
+                console.log("Quiz Status:", data);
+                document.getElementById('members-count').innerText = data.members_count || 0;
+
+                if (data.status === 'waiting') {
+                    showScreen('screen-waiting');
+                }
+                else if (data.status === 'active') {
+                    // Update timer always
+                    const timerEl = document.getElementById('time-left');
+                    if (timerEl) timerEl.innerText = (data.time_left || 0) + 's';
+
+                    if (currentStatus !== 'active' || questionIndex !== data.question_index) {
+                        console.log("New Question Active:", data.question_index);
+                        showScreen('screen-active');
+                        answered = false;
+
+                        const idxEl = document.getElementById('q-index');
+                        const totalEl = document.getElementById('q-total');
+                        const fbEl = document.getElementById('answer-feedback');
+
+                        if (idxEl) idxEl.innerText = (data.question_index || 0) + 1;
+                        if (totalEl) totalEl.innerText = data.total_questions || 0;
+                        if (fbEl) fbEl.innerText = '';
+
+                        renderQuestion(data.question);
+                    }
+                }
+                else if (data.status === 'leaderboard') {
+                    if (currentStatus !== 'leaderboard') {
+                        showScreen('screen-leaderboard');
+                    }
+                    renderLeaderboard(data.leaderboard || []);
+                }
+                else if (data.status === 'finished') {
+                    showScreen('screen-finished');
+                }
+
+                currentStatus = data.status;
+                questionIndex = data.question_index;
+            })
+            .catch(err => console.error("Polling Error:", err));
+    }, 1000);
+</script>
+
+<style>
+    .spinner {
+        width: 30px;
+        height: 30px;
+        border: 3px solid #333;
+        border-top-color: #ff8c00;
+        border-radius: 50%;
+        animation: spin 1s linear infinite;
+    }
+
+    @keyframes spin {
+        to {
+            transform: rotate(360deg);
+        }
+    }
+</style>
+{% endblock %}

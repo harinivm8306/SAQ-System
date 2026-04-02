@@ -1,0 +1,70 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block content %}
+<div class="auth-card">
+    <h2>Create a Room</h2>
+    <p class="subtitle">Set up your room and generate questions with AI.</p>
+    
+    <form method="POST">
+        {% csrf_token %}
+        <div class="form-group">
+            <label for="topic">Topic</label>
+            <input type="text" id="topic" name="topic" placeholder="e.g. Quantum Physics, History of Rome" required>
+        </div>
+        
+        <label>Question Patterns</label>
+        <div class="patterns-grid">
+            <div class="pattern-item">
+                <input type="checkbox" id="mcq" name="mcq" checked>
+                <label for="mcq">MCQs</label>
+            </div>
+            <div class="pattern-item">
+                <input type="checkbox" id="match" name="match">
+                <label for="match">Match Following</label>
+            </div>
+            <div class="pattern-item">
+                <input type="checkbox" id="typing" name="typing">
+                <label for="typing">Typing</label>
+            </div>
+            <div class="pattern-item">
+                <input type="checkbox" id="arrange" name="arrange">
+                <label for="arrange">Arrange Items</label>
+            </div>
+        </div>
+        
+        <button type="submit" class="btn-primary" style="margin-top: 20px;">Create Room</button>
+    </form>
+    
+    <div class="auth-footer">
+        <a href="{% url 'dashboard' %}">Back to Dashboard</a>
+    </div>
+</div>
+
+<style>
+.patterns-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 15px;
+    margin-top: 10px;
+    background: #0f0f0f;
+    padding: 15px;
+    border-radius: 10px;
+    border: 1px solid #333;
+}
+.pattern-item {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+.pattern-item input[type="checkbox"] {
+    width: 20px;
+    height: 20px;
+    cursor: pointer;
+}
+.pattern-item label {
+    margin-bottom: 0;
+    cursor: pointer;
+}
+</style>
+{% endblock %}
